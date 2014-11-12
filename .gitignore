@@ -41,3 +41,12 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+/bin/
+
+
+*.class
+
+#eclipse
+.classpath
+.project
+.settings
