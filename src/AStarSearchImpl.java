@@ -44,16 +44,13 @@ public class AStarSearchImpl implements AStarSearch {
 
 				if (map.containsKey(successorState.config)) {
 					if (map.get(successorState.config) > successorState.realCost) {
-						if (closedQueue.remove(successorState)) {
-							System.out.println("Here1");
-						} else {
-							if (openQueue.remove(successorState)) {
-								System.out.println("Here2");
-							}
+						if (closedQueue.remove(successorState)
+								|| openQueue.remove(successorState)) {
+							openQueue.offer(successorState);
+							map.put(successorState.config,
+									successorState.realCost);
 						}
-						openQueue.offer(successorState);
-						map.put(successorState.config, successorState.realCost);
-					} 
+					}
 				} else {
 					openQueue.offer(successorState);
 					map.put(successorState.config, successorState.realCost);
@@ -128,9 +125,9 @@ public class AStarSearchImpl implements AStarSearch {
 			for (int n : squarePos) {
 				counts[chars[n] - '1']++;
 			}
-			if (counts[0] > counts[1] && counts[0] > counts[2]) {
+			if (counts[0] >= counts[1] && counts[0] >= counts[2]) {
 				return 8 - counts[0];
-			} else if (counts[1] > counts[0] && counts[1] > counts[2]) {
+			} else if (counts[1] >= counts[0] && counts[1] >= counts[2]) {
 				return 8 - counts[1];
 			} else {
 				return 8 - counts[2];
