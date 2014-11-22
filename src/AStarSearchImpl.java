@@ -6,6 +6,7 @@ import java.util.Queue;
 public class AStarSearchImpl implements AStarSearch {
 
 	int[] squarePos = { 6, 7, 8, 11, 12, 15, 16, 17 };
+	int[] fourPos = { 7, 11, 12, 16 };
 	int[][] pos = { { 0, 2, 6, 11, 15, 20, 22 }, { 1, 3, 8, 12, 17, 21, 23 },
 			{ 4, 5, 6, 7, 8, 9, 10 }, { 13, 14, 15, 16, 17, 18, 19 } };
 	char[] moves = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H' };
@@ -16,47 +17,57 @@ public class AStarSearchImpl implements AStarSearch {
 
 	@Override
 	public SearchResult search(String initConfig, int modeFlag) {
-		Map<String, Integer> map = new HashMap<String, Integer>();
 		Queue<State> openQueue = new PriorityQueue<State>(128, State.comparator);
-		Queue<State> closedQueue = new PriorityQueue<State>(128,
-				State.comparator);
 		State initialState = new State(initConfig, 0, getHeuristicCost(
 				initConfig, modeFlag), "");
 		openQueue.offer(initialState);
-		map.put(initialState.config, initialState.realCost);
-
 		int count = 0;
+		
+		Map<String, State> openMap = new HashMap<String, State>();
+		Map<String, State> closedMap = new HashMap<String, State>();
+		openMap.put(initConfig, initialState);
 		while (!openQueue.isEmpty()) {
 			State currentState = openQueue.poll();
 			count++;
-			closedQueue.offer(currentState);
+			closedMap.put(currentState.config,
+					openMap.remove(currentState.config));
 			if (checkGoal(currentState.config)) {
 				return new SearchResult(currentState.config,
 						currentState.opSequence, count);
 			}
-
+			
 			for (char moveName : moves) {
 				String successorConfig = move(currentState.config, moveName);
-				State successorState = new State(successorConfig,
-						currentState.realCost + 1, getHeuristicCost(
-								successorConfig, modeFlag),
-						currentState.opSequence + moveName);
-
-				if (map.containsKey(successorState.config)) {
-					if (map.get(successorState.config) > successorState.realCost) {
-						if (closedQueue.remove(successorState)
-								|| openQueue.remove(successorState)) {
-							openQueue.offer(successorState);
-							map.put(successorState.config,
-									successorState.realCost);
-						}
-					}
-				} else {
+				int successorRealCost = currentState.realCost + 1;
+				if (!(openMap.containsKey(successorConfig) || closedMap
+						.containsKey(successorConfig))) {
+					State successorState = new State(successorConfig,
+							successorRealCost, getHeuristicCost(
+									successorConfig, modeFlag),
+							currentState.opSequence + moveName);
 					openQueue.offer(successorState);
-					map.put(successorState.config, successorState.realCost);
+					openMap.put(successorConfig, successorState);
+				} else {
+					State prevState;
+					if (((prevState = openMap.get(successorConfig)) != null && (successorRealCost < prevState.realCost))
+							|| ((prevState = closedMap.get(successorConfig)) != null && (successorRealCost < prevState.realCost))) {
+						prevState.opSequence = currentState.opSequence+moveName;
+						if(openMap.containsKey(successorConfig)){
+							openQueue.remove(prevState);
+							prevState.realCost = successorRealCost;
+							openQueue.offer(prevState);
+							openMap.put(successorConfig, prevState);
+							
+						} else {
+							prevState.realCost = successorRealCost;
+							openQueue.offer(prevState);
+							openMap.put(successorConfig, closedMap.remove(successorConfig));
+						}					
+					}
 				}
 			}
 		}
+
 		return null;
 	}
 
@@ -116,7 +127,7 @@ public class AStarSearchImpl implements AStarSearch {
 		}
 		return String.valueOf(chars);
 	}
-
+	
 	@Override
 	public int getHeuristicCost(String config, int modeFlag) {
 		if (modeFlag == 1) {
@@ -135,8 +146,18 @@ public class AStarSearchImpl implements AStarSearch {
 		} else if (modeFlag == 2) {
 			return 0;
 		} else {
-			// TODO Add your code here
-			return 0;
+			char chars[] = config.toCharArray();
+			int counts[] = new int[3];
+			for (int n : fourPos) {
+				counts[chars[n] - '1']++;
+			}
+			if (counts[0] >= counts[1] && counts[0] >= counts[2]) {
+				return 4 - counts[0];
+			} else if (counts[1] >= counts[0] && counts[1] >= counts[2]) {
+				return 4 - counts[1];
+			} else {
+				return 4 - counts[2];
+			}
 		}
 	}
 
